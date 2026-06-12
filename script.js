@@ -3,11 +3,15 @@ const CONFIG = {
   /** Numéro WhatsApp Salma : indicatif Maroc sans + ni espaces (ex: 212612345678) */
   whatsapp: "212647084181",
   instagram: "https://www.instagram.com/bakassi_salma",
-  storageKey: "salma_jewelry_products_v2",
+  storageKey: "salma_jewelry_products_v3",
+  /** Modifications locales non encore publiées sur Netlify */
+  catalogDirtyKey: "salma_jewelry_catalog_dirty",
   /** Code secret pour afficher « Ajouter un article » — à changer par Salma */
   adminPin: "Salma&Amine",
   adminSessionKey: "salma_jewelry_admin",
   themeKey: "salma_jewelry_theme",
+  /** Catalogue partagé (TV, téléphone…) — actif sur Netlify uniquement */
+  catalogApi: "/api/catalog",
 };
 
 const CATEGORY_LABELS = {
@@ -17,72 +21,7 @@ const CATEGORY_LABELS = {
   accessoire: "Accessoire",
 };
 
-const defaultProducts = [
-  {
-    id: 1,
-    name: "Collier doré Cœur",
-    price: 349,
-    img: "https://cdn.phototourl.com/free/2026-05-23-41b69fcb-0182-4acf-961b-8735b597d8b0.jpg",
-    category: "bijou",
-    isNew: true,
-  },
-  {
-    id: 2,
-    name: "Bague alliance fine",
-    price: 279,
-    img: "https://cdn.phototourl.com/free/2026-05-23-87b2eb61-7561-4b69-881b-7bd27ac377f5.jpg",
-    category: "bijou",
-    isNew: false,
-  },
-  {
-    id: 3,
-    name: "Paquet Couple « Amour »",
-    price: 450,
-    img: "https://cdn.phototourl.com/free/2026-05-23-03f94407-e5e6-45c3-b472-298d0f707885.jpg",
-    category: "couple",
-    isNew: true,
-  },
-  {
-    id: 4,
-    name: "Coffret Saint-Valentin",
-    price: 599,
-    img: "https://cdn.phototourl.com/free/2026-05-23-4ad15cdf-2b14-4a68-abf4-48ed7fd66679.jpg",
-    category: "couple",
-    isNew: true,
-  },
-  {
-    id: 5,
-    name: "Boîte à bijoux velours",
-    price: 199,
-    img: "https://cdn.phototourl.com/free/2026-05-23-41b69fcb-0182-4acf-961b-8735b597d8b0.jpg",
-    category: "paquet",
-    isNew: false,
-  },
-  {
-    id: 6,
-    name: "Bracelet perles nacrées",
-    price: 189,
-    img: "https://cdn.phototourl.com/free/2026-05-23-87b2eb61-7561-4b69-881b-7bd27ac377f5.jpg",
-    category: "bijou",
-    isNew: false,
-  },
-  {
-    id: 7,
-    name: "Set Ruban & Carte cadeau",
-    price: 89,
-    img: "https://cdn.phototourl.com/free/2026-05-23-03f94407-e5e6-45c3-b472-298d0f707885.jpg",
-    category: "paquet",
-    isNew: true,
-  },
-  {
-    id: 8,
-    name: "Paquet Anniversaire doré",
-    price: 380,
-    img: "https://cdn.phototourl.com/free/2026-05-23-4ad15cdf-2b14-4a68-abf4-48ed7fd66679.jpg",
-    category: "paquet",
-    isNew: true,
-  },
-];
+const defaultProducts = [];
 
 let products = [];
 let cart = [];
@@ -93,8 +32,20 @@ let heroTimer;
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
-/** Catalogue publié sur Netlify (même liste pour tous les visiteurs) */
-async function fetchPublishedCatalog() {
+/** Catalogue en ligne (Netlify Blobs) — même liste TV / téléphone / PC */
+async function fetchRemoteCatalog() {
+  if (location.protocol === "file:") return null;
+  try {
+    const res = await fetch(CONFIG.catalogApi, { cache: "no-store" });
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (Array.isArray(data)) return data;
+  } catch (_) {}
+  return null;
+}
+
+async function fetchProductsJson() {
   try {
     const res = await fetch("./products.json", { cache: "no-store" });
     if (!res.ok) throw new Error("products.json");
@@ -102,6 +53,13 @@ async function fetchPublishedCatalog() {
     if (Array.isArray(data)) return data;
   } catch (_) {}
   return [...defaultProducts];
+}
+
+/** Fallback si le catalogue en ligne n’existe pas encore */
+async function fetchPublishedCatalog() {
+  const remote = await fetchRemoteCatalog();
+  if (remote !== null) return remote;
+  return fetchProductsJson();
 }
 
 function loadProductsFromStorage() {
@@ -112,19 +70,117 @@ function loadProductsFromStorage() {
   return null;
 }
 
+function isCatalogDirty() {
+  try {
+    return localStorage.getItem(CONFIG.catalogDirtyKey) === "1";
+  } catch (_) {
+    return false;
+  }
+}
+
+function markCatalogDirty() {
+  try {
+    localStorage.setItem(CONFIG.catalogDirtyKey, "1");
+  } catch (_) {}
+}
+
+function clearCatalogDirty() {
+  try {
+    localStorage.removeItem(CONFIG.catalogDirtyKey);
+  } catch (_) {}
+}
+
 /**
- * Catalogue sur ce navigateur :
- * - localStorage (si Salma a ajouté/supprimé) = source de vérité
- * - sinon products.json (Netlify / premier visit)
+ * Ordre de chargement :
+ * 1. Brouillon local (si vous avez modifié/supprimé sans republier)
+ * 2. Catalogue Netlify (TV + tous les appareils)
+ * 3. Sinon products.json (vide par défaut)
  */
 async function initProducts() {
-  const published = await fetchPublishedCatalog();
   const saved = loadProductsFromStorage();
-  products = saved !== null ? saved : published;
+  if (saved !== null && isCatalogDirty()) {
+    products = normalizeCatalog(saved);
+    return;
+  }
+
+  const remote = await fetchRemoteCatalog();
+  if (remote !== null) {
+    products = normalizeCatalog(remote);
+    localStorage.setItem(CONFIG.storageKey, JSON.stringify(products));
+    clearCatalogDirty();
+    return;
+  }
+
+  const published = normalizeCatalog(await fetchProductsJson());
+  products = saved !== null ? normalizeCatalog(saved) : published;
+}
+
+let adminSessionPin = null;
+
+async function syncCatalogOnline(quiet = false) {
+  if (location.protocol === "file:") return false;
+  const pin = adminSessionPin || CONFIG.adminPin;
+  try {
+    const res = await fetch(CONFIG.catalogApi, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Admin-Pin": pin,
+      },
+      body: JSON.stringify(products),
+    });
+    if (res.ok) {
+      clearCatalogDirty();
+      return true;
+    }
+    if (!quiet) {
+      if (res.status === 401) {
+        showToast("Netlify : ajoutez la variable ADMIN_PIN (voir NETLIFY-SETUP.md)");
+      } else {
+        showToast("Publication en ligne impossible — redeployez le site sur Netlify");
+      }
+    }
+  } catch (_) {
+    if (!quiet) showToast("Enregistré sur cet appareil seulement");
+  }
+  return false;
 }
 
 function saveProducts() {
   localStorage.setItem(CONFIG.storageKey, JSON.stringify(products));
+  markCatalogDirty();
+  if (isAdminUnlocked()) syncCatalogOnline(true);
+}
+
+const FALLBACK_IMG =
+  "https://cdn.phototourl.com/free/2026-05-23-4ad15cdf-2b14-4a68-abf4-48ed7fd66679.jpg";
+
+function normalizeProduct(p) {
+  if (!p || typeof p.name !== "string" || !p.name.trim()) return null;
+  const price = Number(p.price);
+  if (!Number.isFinite(price) || price < 0) return null;
+  const category = ["bijou", "couple", "paquet", "accessoire"].includes(p.category)
+    ? p.category
+    : "bijou";
+  const img =
+    typeof p.img === "string" && /^https?:\/\//i.test(p.img.trim())
+      ? p.img.trim()
+      : typeof IMAGES !== "undefined"
+        ? IMAGES.fallback
+        : FALLBACK_IMG;
+  return {
+    id: p.id != null ? p.id : Date.now(),
+    name: p.name.trim(),
+    price,
+    img,
+    category,
+    isNew: Boolean(p.isNew),
+  };
+}
+
+function normalizeCatalog(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map(normalizeProduct).filter(Boolean);
 }
 
 function showToast(msg) {
@@ -178,6 +234,7 @@ function initHeroBgRotate() {
 function initHero() {
   const slides = $$(".hero__slide");
   const dotsContainer = $("#heroDots");
+  if (!dotsContainer) return;
 
   slides.forEach((_, i) => {
     const dot = document.createElement("button");
@@ -218,18 +275,25 @@ function startHeroAutoplay() {
 }
 
 /* ——— Products ——— */
+function productPriceLabel(p) {
+  const price = Number(p.price);
+  return Number.isFinite(price) ? price.toLocaleString("fr-MA") : "0";
+}
+
 function productCardHTML(p, compact) {
   const badge = p.isNew ? '<span class="product-card__badge">Nouveau</span>' : "";
+  const fallback =
+    typeof IMAGES !== "undefined" ? IMAGES.fallback : FALLBACK_IMG;
   return `
     <article class="product-card" data-id="${p.id}" data-category="${p.category}">
       <div class="product-card__img">
         ${badge}
         <span class="product-card__cat">${CATEGORY_LABELS[p.category] || p.category}</span>
-        <img src="${p.img}" alt="${p.name}" loading="lazy" referrerpolicy="no-referrer" data-fallback="${typeof IMAGES !== "undefined" ? IMAGES.fallback : "https://cdn.phototourl.com/free/2026-05-23-4ad15cdf-2b14-4a68-abf4-48ed7fd66679.jpg"}">
+        <img src="${escapeHtml(p.img)}" alt="${escapeHtml(p.name)}" loading="lazy" referrerpolicy="no-referrer" data-fallback="${fallback}">
       </div>
       <div class="product-card__body">
         <h3>${escapeHtml(p.name)}</h3>
-        <p class="product-card__price">${p.price.toLocaleString("fr-MA")} DH</p>
+        <p class="product-card__price">${productPriceLabel(p)} DH</p>
         <div class="product-card__actions">
           <button type="button" class="btn btn--primary" data-add="${p.id}">Ajouter</button>
           <a href="${whatsappProductLink(p)}" class="btn btn--ghost" target="_blank" rel="noopener">WhatsApp</a>
@@ -248,6 +312,7 @@ function escapeHtml(str) {
 function renderProducts() {
   const grid = $("#productGrid");
   const newGrid = $("#newGrid");
+  if (!grid || !newGrid) return;
 
   const filtered =
     currentFilter === "all"
@@ -277,7 +342,7 @@ function getPaquetChoices() {
       id: String(p.id),
       name: p.name,
       price: p.price,
-      priceLabel: `${p.price.toLocaleString("fr-MA")} DH`,
+      priceLabel: `${productPriceLabel(p)} DH`,
     }));
 }
 
@@ -311,7 +376,7 @@ function paquetCardFromProduct(p) {
       <div class="paquet-card__body">
         <h3>${escapeHtml(p.name)}</h3>
         <p>${escapeHtml(CATEGORY_LABELS[p.category] || "")}</p>
-        <p class="paquet-card__price">${p.price.toLocaleString("fr-MA")} DH</p>
+        <p class="paquet-card__price">${productPriceLabel(p)} DH</p>
         ${paquetCardActions(p.id)}
       </div>
     </article>
@@ -336,17 +401,25 @@ function renderPaquetsShowcase() {
   initAllImageFallbacks();
 }
 
-function bindProductButtons() {
-  $$("[data-add]").forEach((btn) => {
-    btn.addEventListener("click", () => addToCart(btn.dataset.add));
+/** Un seul listener — évite d’ajouter 2× au panier après chaque filtre */
+let catalogClicksReady = false;
+
+function initCatalogClickDelegation() {
+  if (catalogClicksReady) return;
+  catalogClicksReady = true;
+  document.addEventListener("click", (e) => {
+    const addBtn = e.target.closest("[data-add]");
+    if (addBtn) {
+      addToCart(addBtn.dataset.add);
+      return;
+    }
+    const paquetBtn = e.target.closest("[data-choose-paquet]");
+    if (paquetBtn) selectPaquetForContact(paquetBtn.dataset.choosePaquet);
   });
 }
 
-function bindPaquetChooseButtons() {
-  $$("[data-choose-paquet]").forEach((btn) => {
-    btn.addEventListener("click", () => selectPaquetForContact(btn.dataset.choosePaquet));
-  });
-}
+function bindProductButtons() {}
+function bindPaquetChooseButtons() {}
 
 function populateContactPaquetSelect() {
   const sel = $("#contactPaquet");
@@ -442,12 +515,6 @@ function setAdminVisible(visible) {
   if (!section) return;
   adminUnlocked = visible;
   if (visible) {
-    const stored = loadProductsFromStorage();
-    if (stored !== null) {
-      products = stored;
-      renderProducts();
-      renderPaquetsShowcase();
-    }
     section.hidden = false;
     section.classList.remove("is-admin-hidden");
     section.classList.add("is-admin-visible");
@@ -477,41 +544,67 @@ function renderAdminProductList() {
       <img src="${p.img}" alt="" width="56" height="56" loading="lazy" data-fallback="${typeof IMAGES !== "undefined" ? IMAGES.fallback : ""}">
       <div class="admin-product-item__info">
         <strong>${escapeHtml(p.name)}</strong>
-        <span>${p.price.toLocaleString("fr-MA")} DH · ${escapeHtml(CATEGORY_LABELS[p.category] || p.category)}</span>
+        <span>${productPriceLabel(p)} DH · ${escapeHtml(CATEGORY_LABELS[p.category] || p.category)}</span>
       </div>
-      <button type="button" class="btn btn--delete" data-delete="${p.id}">Supprimer</button>
+      <button type="button" class="btn btn--delete" data-delete="${escapeHtml(String(p.id))}">Supprimer</button>
     </li>
   `
     )
     .join("");
 
   list.querySelectorAll("[data-delete]").forEach((btn) => {
-    btn.addEventListener("click", () => deleteProduct(Number(btn.dataset.delete)));
+    btn.addEventListener("click", () => deleteProduct(btn.dataset.delete));
   });
 
   initAllImageFallbacks();
 }
 
 function deleteProduct(id) {
-  const product = products.find((p) => p.id === id);
+  const product = findOrderable(id);
   if (!product) return;
 
   if (!confirm(`Supprimer « ${product.name} » du site ?`)) return;
 
-  products = products.filter((p) => p.id !== id);
-  cart = cart.filter((item) => item.id !== id);
+  const key = String(product.id);
+  products = products.filter((p) => String(p.id) !== key);
+  cart = cart.filter((item) => String(item.id) !== key);
   saveProducts();
   renderProducts();
   renderPaquetsShowcase();
   renderAdminProductList();
   updateCartUI();
-  showToast("Article supprimé — enregistré sur ce navigateur");
+  showToast("Article supprimé");
+}
+
+function deleteAllProducts() {
+  if (products.length === 0) {
+    showToast("Le catalogue est déjà vide");
+    return;
+  }
+
+  if (
+    !confirm(
+      "Supprimer tous les articles du site ?\n\nCliquez ensuite sur « Publier pour TV / Netlify » pour que la TV soit à jour."
+    )
+  ) {
+    return;
+  }
+
+  products = [];
+  cart = [];
+  saveProducts();
+  renderProducts();
+  renderPaquetsShowcase();
+  renderAdminProductList();
+  updateCartUI();
+  showToast("Catalogue vidé — publiez en ligne pour la TV");
 }
 
 function tryUnlockAdmin() {
   const pin = prompt("Code secret Salma (espace gestion) :");
   if (pin === null) return false;
   if (pin === CONFIG.adminPin) {
+    adminSessionPin = pin;
     setAdminVisible(true);
     showToast("Espace gestion ouvert");
     $("#admin")?.scrollIntoView({ behavior: "smooth" });
@@ -551,6 +644,15 @@ function initAdminAccess() {
     $("#collection")?.scrollIntoView({ behavior: "smooth" });
   });
 
+  $("#publishOnlineBtn")?.addEventListener("click", async () => {
+    const ok = await syncCatalogOnline();
+    if (ok) showToast("Catalogue publié — TV et téléphones à jour");
+  });
+
+  $("#clearCatalogBtn")?.addEventListener("click", () => {
+    deleteAllProducts();
+  });
+
   $("#exportCatalogBtn")?.addEventListener("click", () => {
     const blob = new Blob([JSON.stringify(products, null, 2)], {
       type: "application/json",
@@ -573,12 +675,13 @@ function initAdminAccess() {
       try {
         const data = JSON.parse(reader.result);
         if (!Array.isArray(data)) throw new Error("format");
-        products = data;
+        products = normalizeCatalog(data);
         saveProducts();
         renderProducts();
         renderPaquetsShowcase();
         renderAdminProductList();
         showToast("Catalogue importé");
+        syncCatalogOnline(true);
       } catch {
         showToast("Fichier invalide");
       }
@@ -593,14 +696,18 @@ function initAdminForm() {
   $("#addProductForm")?.addEventListener("submit", (e) => {
     e.preventDefault();
 
-    const product = {
+    const product = normalizeProduct({
       id: Date.now(),
       name: $("#productName").value.trim(),
       price: Number($("#productPrice").value),
       img: $("#productImage").value.trim(),
       category: $("#productCategory").value,
       isNew: $("#productNew").checked,
-    };
+    });
+    if (!product) {
+      showToast("Vérifiez le nom, le prix et le lien image (https://…)");
+      return;
+    }
 
     products.unshift(product);
     saveProducts();
@@ -649,12 +756,16 @@ function updateQty(id, delta) {
 
 function updateCartUI() {
   const count = cart.reduce((s, i) => s + i.qty, 0);
-  $("#cartCount").textContent = count;
+  const countEl = $("#cartCount");
+  const totalEl = $("#cartTotal");
+  const body = $("#cartBody");
+  if (!countEl || !totalEl || !body) return;
+
+  countEl.textContent = count;
 
   const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  $("#cartTotal").textContent = `${total.toLocaleString("fr-MA")} DH`;
+  totalEl.textContent = `${total.toLocaleString("fr-MA")} DH`;
 
-  const body = $("#cartBody");
   if (cart.length === 0) {
     body.innerHTML = '<p class="cart-empty">Votre panier est vide.</p>';
     return;
@@ -799,12 +910,13 @@ function initNav() {
   });
 
   toggle?.addEventListener("click", () => {
+    if (!nav) return;
     const open = nav.classList.toggle("open");
     toggle.setAttribute("aria-expanded", open);
   });
 
   $$(".nav a").forEach((a) => {
-    a.addEventListener("click", () => nav.classList.remove("open"));
+    a.addEventListener("click", () => nav?.classList.remove("open"));
   });
 
   const sections = $$("section[id]");
@@ -857,6 +969,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (typeof preloadHeroImages === "function") preloadHeroImages();
   if (typeof initAllImageFallbacks === "function") initAllImageFallbacks();
   initTheme();
+  if (typeof initSalmaMusic === "function") initSalmaMusic();
+  initCatalogClickDelegation();
   initHero();
   initNav();
   initAdminAccess();

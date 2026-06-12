@@ -49,10 +49,20 @@
         <a href="#paquets">Paquets</a>
         <a href="#nouveautes">Nouveautés</a>
         <a href="#apropos">À propos</a>
+        <a href="#faq">Questions</a>
         <a href="#contact">Contact</a>
       </nav>
 
       <div class="header__actions">
+        <button type="button" class="music-toggle" id="musicToggle" aria-label="Activer la musique" aria-pressed="false">
+          <svg class="music-toggle__icon music-toggle__on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+          </svg>
+          <svg class="music-toggle__icon music-toggle__off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+            <line x1="1" y1="1" x2="23" y2="23"/>
+          </svg>
+        </button>
         <button type="button" class="theme-toggle" id="themeToggle" aria-label="Changer le thème">
           <svg class="theme-toggle__icon theme-toggle__moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
           <svg class="theme-toggle__icon theme-toggle__sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
@@ -139,12 +149,12 @@
             <h3>Paquets & emballages</h3>
             <p>Rubans, boîtes & cartes</p>
           </div>
-        </a>
+        </a>  
         <article class="service-pill">
           <span>🚚</span>
           <div>
-            <h3>Livraison Maroc</h3>
-            <p>Marrakech & villes voisines</p>
+            <h3>Livraison</h3>
+            <p>Marrakech &amp; nawa7i</p>
           </div>
         </article>
       </div>
@@ -233,27 +243,47 @@
       </div>
     </section>
 
-    <!-- Témoignages -->
-    <section class="section testimonials">
+    <!-- Questions fréquentes -->
+    <section class="section faq" id="faq">
       <div class="container">
         <header class="section-head reveal">
-          <p class="section-head__eyebrow">Avis clients</p>
-          <h2>Ce qu'elles en disent</h2>
+          <p class="section-head__eyebrow">Besoin d'aide ?</p>
+          <h2>Questions fréquentes</h2>
+          <p class="section-head__lead">Les réponses aux questions que nos clientes posent le plus souvent.</p>
         </header>
-        <div class="testimonials__grid reveal">
-          <blockquote class="testimonial-card">
-            <p>« Le paquet couple était magnifique, mon mari a adoré ! Emballage soigné et livraison rapide. »</p>
-            <footer>— Nadia, Casablanca</footer>
-          </blockquote>
-          <blockquote class="testimonial-card">
-            <p>« Des bijoux élégants à prix raisonnable. Je recommande Salma Jewelry les yeux fermés. »</p>
-            <footer>— Imane, Mohammedia</footer>
-          </blockquote>
-          <blockquote class="testimonial-card">
-            <p>« J'ai commandé un coffret pour ma sœur — qualité top et service WhatsApp très réactif. »</p>
-            <footer>— Sara, Rabat</footer>
-          </blockquote>
+        <div class="faq__list reveal" id="faqList">
+          <details class="faq-item">
+            <summary class="faq-item__q">Comment passer commande ?</summary>
+            <p class="faq-item__a">Parcourez la collection, cliquez sur <strong>Ajouter</strong> ou <strong>Commander sur WhatsApp</strong>. Votre message s’ouvre avec le détail — confirmez avec Salma et c’est validé.</p>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-item__q">Livrez-vous au Maroc ?</summary>
+            <p class="faq-item__a">Oui — nous sommes basés à <strong>Marrakech</strong>. Livraison à Marrakech et ses <strong>nawa7i</strong> (environs). Pour une autre zone, contactez-nous sur WhatsApp.</p>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-item__q">Quels sont les moyens de paiement ?</summary>
+            <p class="faq-item__a">Paiement à la livraison ou virement selon votre commande. Salma vous confirme le mode de paiement sur WhatsApp avant l’envoi.</p>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-item__q">L’emballage cadeau est-il inclus ?</summary>
+            <p class="faq-item__a">Oui — chaque bijou peut être préparé dans un bel emballage. Les <strong>paquets couple</strong> et coffrets sont pensés pour offrir directement.</p>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-item__q">Puis-je personnaliser un paquet couple ?</summary>
+            <p class="faq-item__a">Bien sûr. Choisissez un paquet sur le site ou décrivez votre idée (occasion, couleurs, message) dans le formulaire contact — Salma vous propose une version sur mesure.</p>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-item__q">Quel est le délai de livraison ?</summary>
+            <p class="faq-item__a">En général <strong>2 à 5 jours</strong> selon la ville et la disponibilité. Pour une date précise (anniversaire, fête), prévenez à l’avance sur WhatsApp.</p>
+          </details>
+          <details class="faq-item">
+            <summary class="faq-item__q">Comment vous contacter ?</summary>
+            <p class="faq-item__a">Le plus rapide : <strong>WhatsApp</strong> (+212 6 47 08 41 81) ou <strong>Instagram</strong> @bakassi_salma. Vous pouvez aussi utiliser le formulaire en bas de page.</p>
+          </details>
         </div>
+        <p class="faq__cta reveal">
+          <a href="#contact" class="btn btn--outline">Une autre question ? Contactez-nous</a>
+        </p>
       </div>
     </section>
 
@@ -263,12 +293,7 @@
         <header class="section-head reveal">
           <p class="section-head__eyebrow">Espace Salma</p>
           <h2>Gérer la boutique</h2>
-          <p class="section-head__lead">Bijoux, paquets, accessoires — tout se gère ici.</p>
-          <div class="admin-notice" id="adminNotice">
-            <p><strong>Paquets :</strong> dans <em>Catégorie</em>, choisissez <strong>Paquets couple</strong> ou <strong>Paquets &amp; emballages</strong> — l’article apparaît dans la section « Nos paquets &amp; coffrets ». Pour le remplacer : <strong>Supprimer</strong> puis republier un nouveau.</p>
-            <p><strong>Commandes :</strong> elles arrivent sur votre <strong>WhatsApp</strong> (pas par e-mail).</p>
-            <p>Les ajouts et suppressions sont <strong>enregistrés sur ce navigateur</strong> (même après F5). Pour le site en ligne : <strong>Exporter</strong> → remplacer <code>products.json</code> → republier.</p>
-          </div>
+          <p class="section-head__lead">Ajoutez ou supprimez vos articles.</p>
         </header>
         <form class="admin-form reveal" id="addProductForm">
           <div class="admin-form__row">
@@ -305,12 +330,12 @@
 
         <div class="admin-manage reveal">
           <h3 class="admin-manage__title">Articles sur le site</h3>
-          <p class="admin-manage__hint">Bijoux, paquets, accessoires : cliquez « Supprimer » pour enlever, puis ajoutez un nouvel article si besoin.</p>
-          <p class="admin-manage__hint admin-manage__hint--netlify">Pour Netlify : après vos modifications, cliquez « Exporter » → remplacez le fichier <code>products.json</code> dans le dossier du site → republiez.</p>
           <ul class="admin-product-list" id="adminProductList"></ul>
         </div>
 
         <div class="admin-tools reveal">
+          <button type="button" class="btn btn--primary" id="publishOnlineBtn">Publier pour TV / Netlify</button>
+          <button type="button" class="btn btn--danger" id="clearCatalogBtn">Vider tout le catalogue</button>
           <button type="button" class="btn btn--outline" id="exportCatalogBtn">Exporter le catalogue (.json)</button>
           <label class="admin-import">
             <span class="btn btn--outline">Importer un catalogue</span>
@@ -328,10 +353,6 @@
           <p class="section-head__eyebrow">Contact</p>
           <h2>Parlons de votre commande</h2>
           <p>Commandes personnalisées, paquets couple ou questions — écrivez-moi sur WhatsApp, je vous réponds rapidement.</p>
-          <p class="contact__how">
-            <strong>Comment commander ?</strong> Choisissez vos articles, cliquez sur « Ajouter » ou « Commander sur WhatsApp » :
-            votre message s’ouvre directement dans mon WhatsApp avec le détail de la commande.
-          </p>
           <ul class="contact__links">
             <li>
               <a href="https://wa.me/212647084181?text=Bonjour%20Salma%20Jewelry%2C%20je%20souhaite%20..." class="contact__link contact__link--wa" target="_blank" rel="noopener">
@@ -388,6 +409,7 @@
       <nav class="footer__nav">
         <a href="#collection">Collection</a>
         <a href="#paquets">Paquets</a>
+        <a href="#faq">Questions</a>
         <a href="#contact">Contact</a>
       </nav>
     </div>
@@ -410,7 +432,17 @@
     </div>
   </aside>
 
+  <audio id="siteMusic" preload="auto" aria-hidden="true"></audio>
+
+  <div class="music-hint" id="musicHint" hidden>
+    <button type="button" class="music-hint__btn" id="musicHintBtn">
+      <span class="music-hint__note" aria-hidden="true">♪</span>
+      <span>Ambiance douce — appuyez pour écouter</span>
+    </button>
+  </div>
+
   <script src="images.js"></script>
+  <script src="music.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
